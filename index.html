@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Análisis Facial Mágico</title>
+    <style>
+      body { font-family: Arial; text-align: center; }
+      video { border: 3px solid pink; border-radius: 10px; }
+      button { padding: 10px; background: purple; color: white; border: none; }
+    </style>
+  </head>
+  <body>
+    <h1>🧖‍♀️ Análisis de Belleza</h1>
+    <video id="video" width="300" height="250" autoplay></video>
+    <button id="boton">Analizar mi Piel</button>
+    <div id="resultados"></div>
+
+    <script>
+      const video = document.getElementById('video');
+      const boton = document.getElementById('boton');
+      const resultados = document.getElementById('resultados');
+
+      // 1. Activar cámara
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => video.srcObject = stream)
+        .catch(() => resultados.innerHTML = "⚠️ Dame permiso para usar la cámara");
+
+      // 2. Acción del botón
+      boton.addEventListener('click', () => {
+        resultados.innerHTML = "<p>✨ Analizando... ¡Tu piel es radiante!</p>";
+      });
+    </script>
+  </body>
+</html>
