@@ -1,33 +1,99 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Análisis Facial Mágico</title>
-    <style>
-      body { font-family: Arial; text-align: center; }
-      video { border: 3px solid pink; border-radius: 10px; }
-      button { padding: 10px; background: purple; color: white; border: none; }
-    </style>
-  </head>
-  <body>
-    <h1>🧖‍♀️ Análisis de Belleza</h1>
-    <video id="video" width="300" height="250" autoplay></video>
-    <button id="boton">Analizar mi Piel</button>
-    <div id="resultados"></div>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DermoAI | Análisis Facial Profesional</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navbar Profesional -->
+    <nav class="navbar navbar-expand-lg bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <img src="assets/img/logo.png" alt="DermoAI" height="40">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#analizar">Análisis</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#productos">Productos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#contacto">Médicos</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-    <script>
-      const video = document.getElementById('video');
-      const boton = document.getElementById('boton');
-      const resultados = document.getElementById('resultados');
+    <!-- Hero Section -->
+    <section class="hero-section bg-light py-5">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold">Tecnología AI para <span class="text-primary">tu piel</span></h1>
+            <p class="lead">Diagnóstico preciso + Recomendaciones personalizadas</p>
+            <button id="startAnalysis" class="btn btn-primary btn-lg mt-3">Comenzar Análisis</button>
+        </div>
+    </section>
 
-      // 1. Activar cámara
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => video.srcObject = stream)
-        .catch(() => resultados.innerHTML = "⚠️ Dame permiso para usar la cámara");
+    <!-- Análisis Facial -->
+    <section id="analizar" class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="camera-container p-3 border rounded">
+                        <video id="videoInput" width="100%" autoplay></video>
+                        <canvas id="canvasOutput" class="d-none"></canvas>
+                        <div class="text-center mt-3">
+                            <button id="captureBtn" class="btn btn-outline-primary">Capturar Rostro</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div id="resultsContainer" class="p-4 bg-white rounded shadow">
+                        <h3 class="mb-4">🔍 Resultados de tu Piel</h3>
+                        <div class="progress mb-3">
+                            <div id="wrinklesBar" class="progress-bar bg-warning" role="progressbar">Arrugas: 0%</div>
+                        </div>
+                        <div class="progress mb-3">
+                            <div id="spotsBar" class="progress-bar bg-info" role="progressbar">Manchas: 0%</div>
+                        </div>
+                        <div id="productRecommendations" class="mt-4">
+                            <h5>💊 Productos Recomendados</h5>
+                            <div id="productsList" class="row"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-      // 2. Acción del botón
-      boton.addEventListener('click', () => {
-        resultados.innerHTML = "<p>✨ Analizando... ¡Tu piel es radiante!</p>";
-      });
-    </script>
-  </body>
+    <!-- Contacto Médico -->
+    <section id="contacto" class="py-5 bg-light">
+        <div class="container">
+            <h2 class="text-center mb-4">📞 Consulta con un Especialista</h2>
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <form id="contactForm" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+                        <div class="mb-3">
+                            <label for="skinType" class="form-label">Tipo de Piel Detectado</label>
+                            <input type="text" class="form-control" id="skinType" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userMessage" class="form-label">Describe tus preocupaciones</label>
+                            <textarea class="form-control" id="userMessage" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Solicitar Video-Consulta</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
+    <script src="script.js"></script>
+</body>
 </html>
