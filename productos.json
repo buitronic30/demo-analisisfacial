@@ -1,0 +1,16 @@
+[
+    {
+        "id": 1,
+        "nombre": "Serum Anti-Arrugas",
+        "categoria": "arrugas",
+        "imagen": "assets/img/serum.jpg",
+        "descripcion": "Reduce líneas de expresión en un 30% en 4 semanas"
+    },
+    {
+        "id": 2,
+        "nombre": "Crema Despigmentante",
+        "categoria": "manchas",
+        "imagen": "assets/img/crema.jpg",
+        "descripcion": "Elimina manchas solares con ácido kójico"
+    }
+]
