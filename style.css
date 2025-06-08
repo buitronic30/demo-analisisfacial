@@ -1,130 +1,93 @@
-/* Estilos generales */
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f8f9fa;
-    color: #333;
-    line-height: 1.6;
-}
+// 1. Variables globales (conectadas a tu HTML)
+const video = document.getElementById('videoInput');
+const captureBtn = document.getElementById('captureBtn');
+let model = null;
+let isLoading = false;
 
-/* Navbar */
-.navbar {
-    background-color: #ffffff !important;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.navbar-brand img {
-    height: 40px;
-}
-
-.nav-link {
-    font-weight: 500;
-    color: #555 !important;
-}
-
-.nav-link:hover {
-    color: #007bff !important;
-}
-
-/* Hero Section */
-.hero-section {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    padding: 80px 0;
-    text-align: center;
-}
-
-.hero-section h1 {
-    font-size: 2.5rem;
-    margin-bottom: 20px;
-}
-
-.hero-section .lead {
-    font-size: 1.2rem;
-    opacity: 0.8;
-}
-
-/* Sección de Análisis */
-.camera-container {
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-#videoInput {
-    border-radius: 8px;
-    background: #000;
-}
-
-#resultsContainer {
-    background: #fff;
-    border-radius: 10px;
-}
-
-.progress {
-    height: 25px;
-    margin-bottom: 15px;
-    border-radius: 12px;
-}
-
-.progress-bar {
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Productos Recomendados */
-#productsList .card {
-    border: none;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    transition: transform 0.3s;
-}
-
-#productsList .card:hover {
-    transform: translateY(-5px);
-}
-
-#productsList .card-img-top {
-    height: 150px;
-    object-fit: cover;
-}
-
-/* Formulario de Contacto */
-#contactForm {
-    background: #fff;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* Footer */
-footer {
-    background: #343a40;
-    color: #fff;
-    padding: 20px 0;
-    text-align: center;
-}
-
-/* Responsive para tablets/móviles */
-@media (max-width: 768px) 
-{
-    video {
-        width: 100% !important;
-        height: auto;
-    }
-    {
-    .hero-section {
-        padding: 50px 0;
-    }
-    
-    .hero-section h1 {
-        font-size: 2rem;
-    }
-    
-    #videoInput {
-        width: 100% !important;
+// 2. Función para INICIAR LA CÁMARA (optimizada para tablets)
+async function startCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                width: 320,  // Resolución baja para mejor rendimiento
+                height: 240,
+                facingMode: 'user'  // Cámara frontal
+            }
+        });
+        video.srcObject = stream;
+        video.play();  // Forzar reproducción en algunos dispositivos
+    } catch (err) {
+        console.error("🚨 Error al activar la cámara:", err);
+        alert("No se pudo acceder a la cámara. Asegúrate de dar permisos y usa Chrome/Firefox.");
     }
 }
 
+// 3. Función para CARGAR EL MODELO DE IA
+async function loadModel() {
+    try {
+        isLoading = true;
+        console.log("⏳ Cargando modelo de IA...");
+        
+        // Modelo ligero para tablets (MediaPipe FaceMesh)
+        model = await faceLandmarksDetection.load(
+            faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
+            { maxFaces: 1 }  // Solo detectar 1 rostro
+        );
+        
+        console.log("✅ Modelo cargado correctamente!");
+        isLoading = false;
+    } catch (err) {
+        console.error("🚨 Error al cargar el modelo:", err);
+        alert("La IA no pudo cargarse. Recarga la página o usa otro dispositivo.");
+        isLoading = false;
+    }
+}
 
+// 4. Función para ANALIZAR EL ROSTRO
+async function analyzeFace() {
+    if (!model || isLoading) {
+        alert("La IA aún no está lista. Espera unos segundos.");
+        return;
+    }
+
+    try {
+        console.log("🔍 Analizando rostro...");
+        const faces = await model.estimateFaces(video);
+        
+        if (faces.length > 0) {
+            // Extraer datos clave para medicina estética
+            const landmarks = faces[0].scaledMesh;
+            const wrinkles = calculateWrinkles(landmarks);  // Función personalizada
+            const skinTone = getSkinTone(video);
+            
+            // Mostrar resultados (puedes personalizar esto)
+            alert(`📊 Resultados:\n- Arrugas: ${wrinkles}%\n- Tono de piel: ${skinTone}`);
+        } else {
+            alert("No se detectó ningún rostro. Acércate a la cámara con buena luz.");
+        }
+    } catch (err) {
+        console.error("🚨 Error al analizar:", err);
+        alert("Error al procesar tu rostro. Intenta de nuevo.");
+    }
+}
+
+// 5. Funciones auxiliares (personalízalas según necesites)
+function calculateWrinkles(landmarks) {
+    // Lógica simplificada: contar puntos en zona de arrugas (frente)
+    const forehead = landmarks.slice(10, 20);
+    return Math.floor((forehead.length / 10) * 100);
+}
+
+function getSkinTone(videoElement) {
+    // Ejemplo básico (puedes implementar algo más avanzado)
+    return ["Claro", "Medio", "Oscuro"][Math.floor(Math.random() * 3)];
+}
+
+// 6. Eventos y Inicialización
+captureBtn.addEventListener('click', analyzeFace);
+
+// Al cargar la página:
+document.addEventListener('DOMContentLoaded', async () => {
+    await startCamera();
+    await loadModel();
+});
