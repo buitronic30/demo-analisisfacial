@@ -21,32 +21,41 @@ async function startCamera() {
 
 // 2. Cargar modelo de IA (con reintentos)
 async function loadModel() {
-    let attempts = 0;
-    const maxAttempts = 3;
-    
-    while (attempts < maxAttempts) {
-        try {
-            loadStatus.textContent = `Cargando IA (Intento ${attempts + 1}/${maxAttempts})...`;
-            model = await faceLandmarksDetection.load(
-                faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
-                { maxFaces: 1, shouldLoadIrisModel: false }
-            );
-            loader.style.display = 'none';
-            console.log("Modelo cargado en intento", attempts + 1);
-            return;
-        } catch (err) {
-            attempts++;
-            console.error(`Intento ${attempts} fallido:`, err);
-            if (attempts === maxAttempts) {
-                loader.innerHTML = `
-                    <div class="text-center">
-                        <h3 class="text-danger">Error al cargar la IA</h3>
-                        <p>Tu dispositivo no es compatible o la conexión falló.</p>
-                        <button class="btn btn-light" onclick="window.location.reload()">Reintentar</button>
-                    </div>
-                `;
-            }
+    const MODEL_URL = 'https://tfhub.dev/mediapipe/tfjs-model/facemesh/1/default/1';
+
+    try {
+        // 1. Verifica si TensorFlow.js está cargado
+        if (typeof tf === 'undefined') {
+            throw new Error("TensorFlow.js no se cargó correctamente");
         }
+
+        // 2. Carga el modelo desde un servidor alternativo
+        model = await tf.loadGraphModel(MODEL_URL, {
+            fromTFHub: true
+        });
+
+        console.log("✅ IA cargada desde TFHub!");
+        document.getElementById('loader').style.display = 'none';
+        return true;
+
+    } catch (err) {
+        console.error("🔴 Error crítico:", err);
+        document.getElementById('loader').innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+                <h3 style="color: red;">Error Fatal</h3>
+                <p>Tu dispositivo no puede ejecutar la IA. Razones:</p>
+                <ul style="text-align: left;">
+                    <li>Memoria RAM insuficiente</li>
+                    <li>Navegador no compatible</li>
+                    <li>Conexión bloqueada por firewall</li>
+                </ul>
+                <button onclick="window.location.reload()" 
+                        style="padding: 10px; background: #007bff; color: white; border: none;">
+                    Reintentar
+                </button>
+            </div>
+        `;
+        return false;
     }
 }
 
