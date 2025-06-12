@@ -1,69 +1,89 @@
-// Espera a que el DOM esté completamente cargado
-document.addEventListener('DOMContentLoaded', function() {
-    // 1. Conexión a elementos HTML
-    const startAnalysisBtn = document.getElementById('startAnalysis');
-    const captureBtn = document.getElementById('captureBtn');
-    const video = document.getElementById('videoInput');
-    let model = null;
+// Variables globales
+let model;
+const video = document.getElementById('videoInput');
+const captureBtn = document.getElementById('captureBtn');
+const resultText = document.getElementById('resultText');
+const loader = document.getElementById('loader');
+const loadStatus = document.getElementById('loadStatus');
 
-    // 2. Función para iniciar cámara
-    async function startCamera() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { width: 320, height: 240, facingMode: 'user' } 
-            });
-            video.srcObject = stream;
-            console.log("Cámara activada correctamente");
-        } catch (err) {
-            console.error("Error al acceder a la cámara:", err);
-            alert("No se pudo acceder a la cámara. Por favor usa Chrome/Firefox.");
-        }
+// 1. Iniciar cámara
+async function startCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 320, height: 240, facingMode: 'user' }
+        });
+        video.srcObject = stream;
+    } catch (err) {
+        console.error("Error en cámara:", err);
+        resultText.innerHTML = "<span class='text-danger'>Error al acceder a la cámara. Usa Chrome/Firefox.</span>";
     }
+}
 
-    // 3. Función para cargar el modelo de IA
-    async function loadModel() {
+// 2. Cargar modelo de IA (con reintentos)
+async function loadModel() {
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts) {
         try {
-            console.log("Cargando modelo de IA...");
+            loadStatus.textContent = `Cargando IA (Intento ${attempts + 1}/${maxAttempts})...`;
             model = await faceLandmarksDetection.load(
                 faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
-                { maxFaces: 1 }
+                { maxFaces: 1, shouldLoadIrisModel: false }
             );
-            console.log("Modelo cargado correctamente");
-        } catch (err) {
-            console.error("Error al cargar el modelo:", err);
-            alert("La IA no pudo cargarse. Recarga la página.");
-        }
-    }
-
-    // 4. Función para analizar el rostro
-    async function analyzeFace() {
-        if (!model) {
-            alert("La IA aún no está lista. Espera unos segundos.");
+            loader.style.display = 'none';
+            console.log("Modelo cargado en intento", attempts + 1);
             return;
-        }
-        
-        try {
-            const faces = await model.estimateFaces(video);
-            if (faces.length > 0) {
-                alert(`¡Rostro detectado! Puntos clave: ${faces[0].scaledMesh.length}`);
-                // Aquí puedes añadir tu lógica de análisis estético
-            } else {
-                alert("No se detectó ningún rostro. Acércate a la cámara.");
-            }
         } catch (err) {
-            console.error("Error al analizar:", err);
-            alert("Error al procesar tu rostro.");
+            attempts++;
+            console.error(`Intento ${attempts} fallido:`, err);
+            if (attempts === maxAttempts) {
+                loader.innerHTML = `
+                    <div class="text-center">
+                        <h3 class="text-danger">Error al cargar la IA</h3>
+                        <p>Tu dispositivo no es compatible o la conexión falló.</p>
+                        <button class="btn btn-light" onclick="window.location.reload()">Reintentar</button>
+                    </div>
+                `;
+            }
         }
     }
+}
 
-    // 5. Event Listeners (¡ESTA ES LA PARTE CLAVE!)
-    startAnalysisBtn.addEventListener('click', async () => {
-        await startCamera();
-        await loadModel();
-    });
+// 3. Analizar rostro
+async function analyzeFace() {
+    if (!model) {
+        resultText.innerHTML = "<span class='text-warning'>La IA aún no está lista. Espera...</span>";
+        return;
+    }
+    
+    try {
+        const faces = await model.estimateFaces(video);
+        if (faces.length > 0) {
+            const landmarks = faces[0].scaledMesh;
+            const wrinkles = Math.min(Math.floor(landmarks.length / 10), 100);
+            resultText.innerHTML = `
+                <p><strong>Resultados:</strong></p>
+                <ul>
+                    <li>Arrugas: <span class="text-primary">${wrinkles}%</span></li>
+                    <li>Puntos clave: ${landmarks.length}</li>
+                </ul>
+            `;
+        } else {
+            resultText.innerHTML = "<span class='text-warning'>No se detectó rostro. Acércate más.</span>";
+        }
+    } catch (err) {
+        console.error("Error al analizar:", err);
+        resultText.innerHTML = "<span class='text-danger'>Error en el análisis. Recarga la página.</span>";
+    }
+}
 
-    captureBtn.addEventListener('click', analyzeFace);
+// Eventos
+captureBtn.addEventListener('click', analyzeFace);
 
-    // Mensaje inicial
-    console.log("Script cargado correctamente");
-});
+// Inicialización
+(async function init() {
+    loader.style.display = 'flex';
+    await startCamera();
+    await loadModel();
+})();
