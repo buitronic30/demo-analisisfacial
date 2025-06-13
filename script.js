@@ -65,22 +65,38 @@ async function startCamera() {
 
 // 2. Cargar modelo ultra-ligero
 async function loadModel() {
-    try {
-        // Forzar backend CPU (mejor compatibilidad)
-        await tf.setBackend('cpu');
-        
-        model = await faceLandmarksDetection.load(
-            faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
-            {
-                maxFaces: 1,
-                shouldLoadIrisModel: false,
-                shouldLoadFaceMeshModel: true
+    let retries = 0;
+    const maxRetries = 2;
+    
+    while (retries < maxRetries) {
+        try {
+            loader.style.display = 'flex';
+            loadStatus.textContent = `Descargando modelos (Intento ${retries + 1})...`;
+            
+            model = await faceLandmarksDetection.load(
+                faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
+                {
+                    maxFaces: 1,
+                    shouldLoadIrisModel: false,
+                    modelUrl: 'https://storage.googleapis.com/tfjs-models/savedmodel/facemesh/model.json' 
+                }
+            );
+            
+            console.log("Modelo cargado en intento", retries + 1);
+            loader.style.display = 'none';
+            return true;
+        } catch (err) {
+            retries++;
+            console.error(`Intento ${retries} fallido:`, err);
+            
+            if (retries >= maxRetries) {
+                loader.style.display = 'none';
+                return false;
             }
-        );
-        console.log("Modelo cargado en CPU");
-    } catch (err) {
-        console.error("Error al cargar modelo:", err);
-        throw err;
+            
+            // Espera 5 segundos antes de reintentar
+            await new Promise(resolve => setTimeout(resolve, 5000));
+        }
     }
 }
 
