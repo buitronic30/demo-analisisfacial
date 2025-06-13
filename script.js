@@ -1,167 +1,84 @@
-// Configuración para Lenovo Tab 12
-const video = document.getElementById('video');
-const analyzeBtn = document.getElementById('analyzeBtn');
+// Variables globales
+let model;
+const video = document.getElementById('videoInput');
+const captureBtn = document.getElementById('captureBtn');
 const resultText = document.getElementById('resultText');
 const loader = document.getElementById('loader');
 
-let attempts = 0;
-const maxAttempts = 3;
-
-captureBtn.addEventListener('click', async () => {
-    if (!model) {
-        attempts++;
-        
-        if (attempts >= maxAttempts) {
-            // Cambia a modo básico si falla 3 veces
-            resultText.innerHTML = `
-                <strong>Modo básico activado:</strong><br>
-                1. Posiciona tu rostro en el centro<br>
-                2. Asegura buena iluminación<br>
-                3. <button onclick="location.reload()" 
-                          style="padding: 5px; background: #007bff; color: white; border: none;">
-                        Reintentar con IA
-                   </button>
-            `;
-            return;
-        }
-        
-        // Mensaje amigable con cuenta regresiva
-        resultText.innerHTML = `⌛ IA no cargada (Intento ${attempts}/${maxAttempts}).<br>
-                               Recargando automáticamente en <span id="countdown">3</span> segundos...`;
-        
-        // Cuenta regresiva visual
-        let seconds = 3;
-        const countdown = setInterval(() => {
-            seconds--;
-            document.getElementById('countdown').textContent = seconds;
-            if (seconds <= 0) {
-                clearInterval(countdown);
-                location.reload();
-            }
-        }, 1000);
-        
-        return;
-    }
-    
-    // Si el modelo está cargado, procede con el análisis
-    await analyzeFace();
-});
-
-// 1. Iniciar cámara (optimizado para Lenovo)
+// 1. Función para iniciar la cámara
 async function startCamera() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                width: 240,  // Resolución baja
-                height: 180,
-                facingMode: 'user'
-            }
+            video: { width: 320, height: 240, facingMode: 'user' }
         });
         video.srcObject = stream;
     } catch (err) {
-        resultText.innerHTML = `<span style="color: red;">Error: ${err.message}</span>`;
+        console.error("Error en cámara:", err);
+        resultText.innerHTML = '<span class="error">Error al acceder a la cámara. Usa Chrome/Firefox.</span>';
     }
 }
 
-// 2. Cargar modelo ultra-ligero
+// 2. Función para cargar el modelo de IA
 async function loadModel() {
-    let retries = 0;
-    const maxRetries = 2;
-    
-    while (retries < maxRetries) {
-        try {
-            loader.style.display = 'flex';
-            loadStatus.textContent = `Descargando modelos (Intento ${retries + 1})...`;
-            
-            model = await faceLandmarksDetection.load(
-                faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
-                {
-                    maxFaces: 1,
-                    shouldLoadIrisModel: false,
-                    modelUrl: 'https://storage.googleapis.com/tfjs-models/savedmodel/facemesh/model.json' 
-                }
-            );
-            
-            console.log("Modelo cargado en intento", retries + 1);
-            loader.style.display = 'none';
-            return true;
-        } catch (err) {
-            retries++;
-            console.error(`Intento ${retries} fallido:`, err);
-            
-            if (retries >= maxRetries) {
-                loader.style.display = 'none';
-                return false;
-            }
-            
-            // Espera 5 segundos antes de reintentar
-            await new Promise(resolve => setTimeout(resolve, 5000));
-        }
+    try {
+        loader.style.display = 'block';
+        console.log("Cargando modelo...");
+        
+        model = await faceLandmarksDetection.load(
+            faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
+            { maxFaces: 1 }
+        );
+        
+        console.log("✅ Modelo cargado!");
+        loader.style.display = 'none';
+    } catch (err) {
+        console.error("Error al cargar modelo:", err);
+        resultText.innerHTML = '<span class="error">La IA no pudo cargarse. Recarga la página.</span>';
+        loader.style.display = 'none';
     }
 }
 
-// 3. Análisis simplificado
+// 3. Función para analizar el rostro
 async function analyzeFace() {
-    if (isAnalyzing) return;
-    isAnalyzing = true;
-    
-    loader.style.display = 'block';
-    resultText.textContent = "Analizando...";
+    if (!model) {
+        resultText.innerHTML = '<span class="error">IA no lista. Espera unos segundos.</span>';
+        return;
+    }
     
     try {
-        const faces = await model.estimateFaces(video, {
-            flipHorizontal: false,
-            predictIrises: false
-        });
+        console.log("Analizando...");
+        const faces = await model.estimateFaces(video);
         
         if (faces.length > 0) {
-            const landmarks = faces[0].scaledMesh;
-            const faceWidth = Math.abs(landmarks[234][0] - landmarks[454][0]);  // Puntos de oreja a oreja
-            
-            // Resultados simulados (para tablets lentas)
-            resultText.innerHTML = `
-                <strong>Resultados básicos:</strong><br>
-                • Forma del rostro: ${faceWidth > 100 ? "Ovalada" : "Redonda"}<br>
-                • Puntos detectados: ${landmarks.length}<br>
-                <small style="color: #666;">Análisis limitado en tu dispositivo</small>
-            `;
+            resultText.innerHTML = `<span class="success">¡Rostro detectado! Puntos clave: ${faces[0].scaledMesh.length}</span>`;
         } else {
-            resultText.textContent = "No se detectó rostro. Acércate más.";
+            resultText.innerHTML = '<span class="error">No se detectó rostro. Acércate más.</span>';
         }
     } catch (err) {
-        resultText.innerHTML = `<span style="color: red;">Error: ${err.message}</span>`;
-    } finally {
-        loader.style.display = 'none';
-        isAnalyzing = false;
+        console.error("Error al analizar:", err);
+        resultText.innerHTML = '<span class="error">Error en el análisis. Intenta de nuevo.</span>';
     }
 }
 
-// 4. Inicialización optimizada
+// 4. Vinculación del botón (¡ESTA ES LA PARTE CLAVE!)
+captureBtn.addEventListener('click', analyzeFace);
+
+// 5. Inicialización al cargar la página
 (async function init() {
-    // Paso 1: Iniciar cámara inmediatamente
     await startCamera();
-    
-    // Paso 2: Cargar modelo en segundo plano
-    loadModel().catch(err => {
-        resultText.innerHTML = `
-            <span style="color: orange;">
-                Advertencia: Análisis limitado<br>
-                <small>Tu dispositivo no soporta IA completa</small>
-            </span>
-        `;
-    });
-    
-    // Paso 3: Configurar botón
-    analyzeBtn.addEventListener('click', () => {
-        if (model) {
-            analyzeFace();
-        } else {
-            resultText.innerHTML = `
-                <span style="color: orange;">
-                    IA no cargada completamente<br>
-                    <small>Espera unos segundos y reintenta</small>
-                </span>
-            `;
-        }
-    });
+    await loadModel();
 })();
+
+// 6. Solución de emergencia para tablets (por si el evento no se registra)
+function fixButton() {
+    const btn = document.getElementById('captureBtn');
+    if (btn) {
+        btn.onclick = null; // Elimina listeners previos
+        btn.addEventListener('click', analyzeFace);
+        console.log("Botón reparado!");
+    }
+}
+
+// Ejecutar al cargar y cada 5 segundos
+fixButton();
+setInterval(fixButton, 5000);
