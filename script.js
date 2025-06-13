@@ -1,3 +1,19 @@
+// Verificar compatibilidad con TensorFlow
+function checkCompatibility() {
+    const compatMsg = document.createElement('div');
+    if (!tf.ENV.get('WEBGL_VERSION')) {
+        compatMsg.innerHTML = `
+            <div class="error">
+                <p>⚠️ Tu navegador no soporta aceleración por hardware.</p>
+                <p>Usaremos modo CPU (más lento pero compatible).</p>
+            </div>
+        `;
+        document.body.prepend(compatMsg);
+        tf.setBackend('cpu');
+    }
+}
+checkCompatibility();
+
 // Configuración para laptops (Core i3)
 const video = document.getElementById('videoInput');
 const resultText = document.getElementById('resultText');
