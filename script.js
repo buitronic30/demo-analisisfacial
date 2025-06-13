@@ -1,98 +1,111 @@
-// Variables globales
-let model;
-const video = document.getElementById('videoInput');
-const captureBtn = document.getElementById('captureBtn');
+// Configuración para Lenovo Tab 12
+const video = document.getElementById('video');
+const analyzeBtn = document.getElementById('analyzeBtn');
 const resultText = document.getElementById('resultText');
 const loader = document.getElementById('loader');
-const loadStatus = document.getElementById('loadStatus');
 
-// 1. Iniciar cámara
+let model = null;
+let isAnalyzing = false;
+
+// 1. Iniciar cámara (optimizado para Lenovo)
 async function startCamera() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 320, height: 240, facingMode: 'user' }
+            video: {
+                width: 240,  // Resolución baja
+                height: 180,
+                facingMode: 'user'
+            }
         });
         video.srcObject = stream;
     } catch (err) {
-        console.error("Error en cámara:", err);
-        resultText.innerHTML = "<span class='text-danger'>Error al acceder a la cámara. Usa Chrome/Firefox.</span>";
+        resultText.innerHTML = `<span style="color: red;">Error: ${err.message}</span>`;
     }
 }
 
-// 2. Cargar modelo de IA (con reintentos)
+// 2. Cargar modelo ultra-ligero
 async function loadModel() {
-    const MODEL_URL = 'https://tfhub.dev/mediapipe/tfjs-model/facemesh/1/default/1';
-
     try {
-        // 1. Verifica si TensorFlow.js está cargado
-        if (typeof tf === 'undefined') {
-            throw new Error("TensorFlow.js no se cargó correctamente");
-        }
-
-        // 2. Carga el modelo desde un servidor alternativo
-        model = await tf.loadGraphModel(MODEL_URL, {
-            fromTFHub: true
-        });
-
-        console.log("✅ IA cargada desde TFHub!");
-        document.getElementById('loader').style.display = 'none';
-        return true;
-
+        // Forzar backend CPU (mejor compatibilidad)
+        await tf.setBackend('cpu');
+        
+        model = await faceLandmarksDetection.load(
+            faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
+            {
+                maxFaces: 1,
+                shouldLoadIrisModel: false,
+                shouldLoadFaceMeshModel: true
+            }
+        );
+        console.log("Modelo cargado en CPU");
     } catch (err) {
-        console.error("🔴 Error crítico:", err);
-        document.getElementById('loader').innerHTML = `
-            <div style="text-align: center; padding: 20px;">
-                <h3 style="color: red;">Error Fatal</h3>
-                <p>Tu dispositivo no puede ejecutar la IA. Razones:</p>
-                <ul style="text-align: left;">
-                    <li>Memoria RAM insuficiente</li>
-                    <li>Navegador no compatible</li>
-                    <li>Conexión bloqueada por firewall</li>
-                </ul>
-                <button onclick="window.location.reload()" 
-                        style="padding: 10px; background: #007bff; color: white; border: none;">
-                    Reintentar
-                </button>
-            </div>
-        `;
-        return false;
+        console.error("Error al cargar modelo:", err);
+        throw err;
     }
 }
 
-// 3. Analizar rostro
+// 3. Análisis simplificado
 async function analyzeFace() {
-    if (!model) {
-        resultText.innerHTML = "<span class='text-warning'>La IA aún no está lista. Espera...</span>";
-        return;
-    }
+    if (isAnalyzing) return;
+    isAnalyzing = true;
+    
+    loader.style.display = 'block';
+    resultText.textContent = "Analizando...";
     
     try {
-        const faces = await model.estimateFaces(video);
+        const faces = await model.estimateFaces(video, {
+            flipHorizontal: false,
+            predictIrises: false
+        });
+        
         if (faces.length > 0) {
             const landmarks = faces[0].scaledMesh;
-            const wrinkles = Math.min(Math.floor(landmarks.length / 10), 100);
+            const faceWidth = Math.abs(landmarks[234][0] - landmarks[454][0]);  // Puntos de oreja a oreja
+            
+            // Resultados simulados (para tablets lentas)
             resultText.innerHTML = `
-                <p><strong>Resultados:</strong></p>
-                <ul>
-                    <li>Arrugas: <span class="text-primary">${wrinkles}%</span></li>
-                    <li>Puntos clave: ${landmarks.length}</li>
-                </ul>
+                <strong>Resultados básicos:</strong><br>
+                • Forma del rostro: ${faceWidth > 100 ? "Ovalada" : "Redonda"}<br>
+                • Puntos detectados: ${landmarks.length}<br>
+                <small style="color: #666;">Análisis limitado en tu dispositivo</small>
             `;
         } else {
-            resultText.innerHTML = "<span class='text-warning'>No se detectó rostro. Acércate más.</span>";
+            resultText.textContent = "No se detectó rostro. Acércate más.";
         }
     } catch (err) {
-        console.error("Error al analizar:", err);
-        resultText.innerHTML = "<span class='text-danger'>Error en el análisis. Recarga la página.</span>";
+        resultText.innerHTML = `<span style="color: red;">Error: ${err.message}</span>`;
+    } finally {
+        loader.style.display = 'none';
+        isAnalyzing = false;
     }
 }
 
-// Eventos
-captureBtn.addEventListener('click', analyzeFace);
-
-// Inicialización
+// 4. Inicialización optimizada
 (async function init() {
-    loader.style.display = 'flex';
+    // Paso 1: Iniciar cámara inmediatamente
     await startCamera();
-    await loadModel();
+    
+    // Paso 2: Cargar modelo en segundo plano
+    loadModel().catch(err => {
+        resultText.innerHTML = `
+            <span style="color: orange;">
+                Advertencia: Análisis limitado<br>
+                <small>Tu dispositivo no soporta IA completa</small>
+            </span>
+        `;
+    });
+    
+    // Paso 3: Configurar botón
+    analyzeBtn.addEventListener('click', () => {
+        if (model) {
+            analyzeFace();
+        } else {
+            resultText.innerHTML = `
+                <span style="color: orange;">
+                    IA no cargada completamente<br>
+                    <small>Espera unos segundos y reintenta</small>
+                </span>
+            `;
+        }
+    });
 })();
