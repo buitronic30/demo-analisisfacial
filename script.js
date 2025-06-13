@@ -26,27 +26,45 @@ async function startCamera() {
 // 2. Cargar modelo de IA con optimización para CPU
 async function loadModel() {
     try {
-        loader.style.display = 'flex';
+        console.log("🔵 Inicializando TensorFlow.js...");
         
-        // Configura TensorFlow.js para usar backend CPU/WebGL
-        await tf.setBackend('webgl'); // Cambia a 'cpu' si falla
+        // 1. Configurar backend explícitamente
+        await tf.setBackend('webgl');  // Usa 'cpu' si falla
         await tf.ready();
-        
-        model = await faceLandmarksDetection.load(
+        console.log("✅ Backend usado:", tf.getBackend());
+
+        // 2. Cargar modelo con timeout
+        const loadPromise = faceLandmarksDetection.load(
             faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
             { 
                 maxFaces: 1,
                 shouldLoadIrisModel: false,
-                shouldLoadFaceMeshModel: true 
+                modelUrl: 'https://tfhub.dev/mediapipe/tfjs-model/facemesh/1/default/1' 
             }
         );
-        
-        loader.style.display = 'none';
-        console.log("Modelo cargado con backend:", tf.getBackend());
+
+        // Timeout de 20 segundos
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Timeout al cargar el modelo")), 20000)
+        );
+
+        model = await Promise.race([loadPromise, timeoutPromise]);
+        console.log("🟢 Modelo cargado correctamente");
         return true;
+
     } catch (err) {
-        console.error("Error al cargar modelo:", err);
-        resultText.innerHTML = '<div class="error">Error en IA. Recarga la página.</div>';
+        console.error("🔴 Error crítico:", err);
+        resultText.innerHTML = `
+            <div class="error">
+                <p>Error al cargar la IA. Causas posibles:</p>
+                <ul>
+                    <li>Tu navegador no soporta WebGL (prueba con Chrome/Firefox)</li>
+                    <li>Falta de memoria RAM (cierra otras apps)</li>
+                    <li>Conexión lenta (usa WiFi estable)</li>
+                </ul>
+                <button onclick="window.location.reload()">Reintentar</button>
+            </div>
+        `;
         return false;
     }
 }
