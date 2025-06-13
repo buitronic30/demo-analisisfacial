@@ -2,149 +2,78 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis Facial</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Análisis Facial Lenovo</title>
     <style>
-        body { font-family: Arial; text-align: center; padding: 20px; }
-        #cameraContainer { margin: 20px auto; width: 90%; }
-        video { width: 100%; border: 3px solid #007bff; border-radius: 10px; }
-        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; }
-        #result { margin-top: 20px; padding: 15px; border: 1px dashed #ccc; }
-        #loader { margin: 20px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        #container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        video {
+            width: 100%;
+            border-radius: 10px;
+            border: 2px solid #6200ee;
+        }
+        button {
+            background: #6200ee;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            margin: 15px 0;
+            width: 100%;
+        }
+        #results {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            min-height: 100px;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #6200ee;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
-    <h1>Análisis Facial Estético</h1>
-    
-    <div id="cameraContainer">
+    <div id="container">
+        <h2 style="color: #6200ee; text-align: center;">Análisis Facial para Lenovo</h2>
+        
         <video id="video" autoplay muted></video>
-        <button id="captureBtn">Analizar Rostro</button>
+        <button id="analyzeBtn">ANALIZAR ROSTRO</button>
+        
+        <div class="loader" id="loader"></div>
+        <div id="results">
+            <p id="resultText" style="text-align: center;">Presiona el botón para comenzar</p>
+        </div>
     </div>
 
-    <div id="result">
-        <p id="resultText">Presiona "Analizar Rostro" para comenzar</p>
-    </div>
-
-    <div id="loader">
-        <p>Cargando inteligencia artificial...</p>
-        <progress id="progressBar" value="0" max="100"></progress>
-        <p id="errorMsg" style="color:red;"></p>
-    </div>
-
-    <!-- Scripts con Plan A (IA local) y Plan B (IA remota) -->
-    <script>
-        // Configuración
-        const video = document.getElementById('video');
-        const captureBtn = document.getElementById('captureBtn');
-        const resultText = document.getElementById('resultText');
-        const loader = document.getElementById('loader');
-        const progressBar = document.getElementById('progressBar');
-        const errorMsg = document.getElementById('errorMsg');
-
-        // 1. Intentar cargar IA local (Plan A)
-        async function loadLocalAI() {
-            try {
-                // Intenta cargar TensorFlow.js dinámicamente
-                await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js');
-                await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.2.0/dist/face-landmarks-detection.min.js');
-                
-                // Verifica si se cargó correctamente
-                if (typeof faceLandmarksDetection === 'undefined') {
-                    throw new Error('No se pudo cargar la IA');
-                }
-
-                return true;
-            } catch (err) {
-                console.error("Error en Plan A:", err);
-                return false;
-            }
-        }
-
-        // 2. Función para cargar scripts dinámicamente
-        function loadScript(url) {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = url;
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            });
-        }
-
-        // 3. Iniciar cámara
-        async function startCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { width: 320, height: 240 } 
-                });
-                video.srcObject = stream;
-                return true;
-            } catch (err) {
-                errorMsg.textContent = "Error al acceder a la cámara. Asegúrate de dar permisos.";
-                return false;
-            }
-        }
-
-        // 4. Inicialización
-        (async function init() {
-            // Ocultar loader inicialmente
-            loader.style.display = 'none';
-            
-            // Intentar cargar IA local
-            const localAISuccess = await loadLocalAI();
-            
-            if (!localAISuccess) {
-                errorMsg.textContent = "Tu dispositivo no soporta IA local. Usaremos análisis básico.";
-            }
-
-            // Iniciar cámara
-            await startCamera();
-
-            // Configurar botón
-            captureBtn.addEventListener('click', () => {
-                if (localAISuccess) {
-                    analyzeWithAI();
-                } else {
-                    basicAnalysis();
-                }
-            });
-        })();
-
-        // 5. Análisis con IA (si está disponible)
-        async function analyzeWithAI() {
-            loader.style.display = 'block';
-            progressBar.value = 0;
-            
-            try {
-                const model = await faceLandmarksDetection.load(
-                    faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
-                    { maxFaces: 1 }
-                );
-                
-                progressBar.value = 50;
-                const faces = await model.estimateFaces(video);
-                
-                if (faces.length > 0) {
-                    resultText.innerHTML = "<strong>Resultado con IA:</strong><br>Rostro detectado con " + 
-                                         faces[0].scaledMesh.length + " puntos clave.";
-                } else {
-                    resultText.textContent = "No se detectó rostro. Acércate más.";
-                }
-            } catch (err) {
-                resultText.textContent = "Error en IA. Usando análisis básico.";
-                basicAnalysis();
-            } finally {
-                loader.style.display = 'none';
-            }
-        }
-
-        // 6. Análisis básico (Plan B)
-        function basicAnalysis() {
-            resultText.innerHTML = "<strong>Análisis básico:</strong><br>" +
-                                 "1. Coloca tu rostro centrado<br>" +
-                                 "2. Asegura buena iluminación<br>" +
-                                 "3. Sonríe para mejores resultados";
-        }
-    </script>
+    <!-- TensorFlow.js Lite + Polyfills -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.0/dist/face-landmarks-detection.min.js"></script>
+    
+    <!-- Nuestro script optimizado -->
+    <script src="script.js"></script>
 </body>
 </html>
