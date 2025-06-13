@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Análisis Facial Simplificado</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body { font-family: Arial; text-align: center; padding: 20px; }
+        video { width: 100%; max-width: 400px; border: 2px solid #007bff; }
+        button { padding: 12px 24px; background: #007bff; color: white; border: none; margin: 10px; }
+        #result { padding: 15px; background: #f0f0f0; border-radius: 8px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h2>Análisis Facial Estético</h2>
+    <video id="video" autoplay muted></video>
+    <button id="captureBtn">Analizar Rostro</button>
+    <div id="result">
+        <p>Presiona el botón para analizar</p>
+    </div>
+
+    <script>
+        // 1. Configuración básica SIN IA
+        const video = document.getElementById('video');
+        const captureBtn = document.getElementById('captureBtn');
+        const resultDiv = document.getElementById('result');
+
+        // 2. Activar cámara (funciona en 99% de tablets)
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 320, height: 240, facingMode: 'user' } 
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                resultDiv.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
+            }
+        }
+
+        // 3. Análisis SIMULADO (sin IA real)
+        function simulateAnalysis() {
+            resultDiv.innerHTML = `
+                <h3>🔍 Resultados Simulados</h3>
+                <ul>
+                    <li><strong>Arrugas:</strong> 30% (leves)</li>
+                    <li><strong>Tono de piel:</strong> Medio</li>
+                    <li><strong>Recomendación:</strong> Serum hidratante</li>
+                </ul>
+                <p><small>*Este es un demo básico. Para análisis real, usa una computadora.</small></p>
+            `;
+        }
+
+        // 4. Eventos
+        captureBtn.addEventListener('click', simulateAnalysis);
+        window.onload = startCamera;
+    </script>
+</body>
+</html>
