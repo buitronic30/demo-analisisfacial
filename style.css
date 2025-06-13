@@ -91,3 +91,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     await startCamera();
     await loadModel();
 });
+
+    /* ===== ESTILOS PARA MENSAJES DE IA (AÑADIR AL FINAL) ===== */
+/* Contenedor de resultados */
+#resultText {
+    transition: all 0.3s ease;
+    min-height: 80px;
+    padding: 15px;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    margin-top: 10px;
+}
+
+/* Mensajes de error */
+#resultText.error {
+    background: #ffebee;
+    border-left: 4px solid #f44336;
+    color: #d32f2f;
+}
+
+/* Mensajes de éxito */
+#resultText.success {
+    background: #e8f5e9;
+    border-left: 4px solid #4caf50;
+    color: #2e7d32;
+}
+
+/* Cuenta regresiva */
+#countdown {
+    font-weight: bold;
+    color: #007bff;
+    font-size: 1.2em;
+}
+
+/* Botón de reintento */
+#retryButton {
+    padding: 8px 15px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+/* Loader de carga */
+#loader {
+    display: none; /* Oculto por defecto */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 1000;
+    text-align: center;
+}
