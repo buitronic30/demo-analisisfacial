@@ -4,8 +4,48 @@ const analyzeBtn = document.getElementById('analyzeBtn');
 const resultText = document.getElementById('resultText');
 const loader = document.getElementById('loader');
 
-let model = null;
-let isAnalyzing = false;
+let attempts = 0;
+const maxAttempts = 3;
+
+captureBtn.addEventListener('click', async () => {
+    if (!model) {
+        attempts++;
+        
+        if (attempts >= maxAttempts) {
+            // Cambia a modo básico si falla 3 veces
+            resultText.innerHTML = `
+                <strong>Modo básico activado:</strong><br>
+                1. Posiciona tu rostro en el centro<br>
+                2. Asegura buena iluminación<br>
+                3. <button onclick="location.reload()" 
+                          style="padding: 5px; background: #007bff; color: white; border: none;">
+                        Reintentar con IA
+                   </button>
+            `;
+            return;
+        }
+        
+        // Mensaje amigable con cuenta regresiva
+        resultText.innerHTML = `⌛ IA no cargada (Intento ${attempts}/${maxAttempts}).<br>
+                               Recargando automáticamente en <span id="countdown">3</span> segundos...`;
+        
+        // Cuenta regresiva visual
+        let seconds = 3;
+        const countdown = setInterval(() => {
+            seconds--;
+            document.getElementById('countdown').textContent = seconds;
+            if (seconds <= 0) {
+                clearInterval(countdown);
+                location.reload();
+            }
+        }, 1000);
+        
+        return;
+    }
+    
+    // Si el modelo está cargado, procede con el análisis
+    await analyzeFace();
+});
 
 // 1. Iniciar cámara (optimizado para Lenovo)
 async function startCamera() {
